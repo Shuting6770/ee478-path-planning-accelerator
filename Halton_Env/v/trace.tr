@@ -1,0 +1,31 @@
+#####################################################################
+# |<    4-bits    >|<      1-bit      >|<    1-bit   >|<   8-bits  >|
+# +----------------+-------------------+--------------+-------------+
+# | replay command | 0:update 1:enable | update value | 8 neighbors |
+# +----------------+-------------------+--------------+-------------+
+#####################################################################
+
+# EXAMPLES:
+# Update, value = 1
+0001__0_1_00000000
+# Recv 1, live cell
+0010__000000000_1
+# Enable, 8 neighbors = 8'b01000100
+0001__1_0_01000100
+# Recv 1, a live cell with two live neighbours lives on to the next generation.
+0010__000000000_1
+
+
+# TODO: Add more testing traces here!!!
+# Please create at least 20 test cases:
+# Set the update value to 0, then set enbale to 1 and test with 0-8 live neighbors
+# Set the update value to 1, then set enbale to 1 and test with 0-8 live neighbors
+
+
+
+
+
+
+
+# Finish simulation
+0100__0_0_00000000

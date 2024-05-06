@@ -10,16 +10,16 @@
 **/
 
 
-module halton_sequence_value #(parameter numNode = 200,
-                               parameter MAP_WIDTH = 1000)
+module halton_sequence_value #(parameter MAP_WIDTH = 1000)  // map size = 1000*1000
   (
     input reset
    ,input clk
    ,input [1:0] base_i
+   ,input [15:0] numNode_i
 
-   ,output logic [$clog2(MAP_WIDTH+1)-1:0] value_o // 每个value在0~1000，根据map_size修改
-   ,output logic [$clog2(numNode+1)-1:0] index_o // index of the value
-   ,output logic valid_o
+   ,output logic [$clog2(MAP_WIDTH+1)-1:0] value_o // each value is 0~1000, modify it according to the map_width
+   ,output logic [15:0] index_o // index of the value
+   ,output logic valid_o // 1 when the value_o is valid, otherwise is 0
   );
 
   enum {WAIT, ONE, TWO, THREE, NEXT, DONE} state_r, state_n;
@@ -58,7 +58,7 @@ module halton_sequence_value #(parameter numNode = 200,
       end
       THREE: state_n = NEXT;
       NEXT: begin 
-        if cnt <= numNode state_n = WAIT;
+        if cnt_r < numNode_i state_n = WAIT;
         else state_n = DONE;
       end
       DONE: state_n = DONE;
@@ -68,12 +68,12 @@ module halton_sequence_value #(parameter numNode = 200,
   assign valid_o = (state_r==NEXT);//输出一个有效数字
   assign cnt_n = (state_n==NEXT)? cnt_r + 1'b1 : cnt_r;
   assign index_o = cnt_r;
-  assign value_o = n_r * 1000 / d_r;
+  assign value_o = n_r * MAP_WIDTH / d_r;
 
   always_ff @(posedge clk) begin
     if reset begin
       state_r <= WAIT;
-      cnt <= '0;
+      cnt_r <= '0;
       n_r <= '0;
       d_r <= '1;
       y_r <= '0;

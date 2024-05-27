@@ -1,54 +1,82 @@
 module bsg_cgol_cell_array #(
-   parameter `BSG_INV_PARAM(board_width_p)
-  ,localparam num_total_cells_lp = board_width_p*board_width_p
+  parameter board_width_p = 64,  // Assuming 64x64 grid
+  parameter `BSG_INV_PARAM(max_game_length_p),
+  localparam game_length_width_lp=`BSG_SAFE_CLOG2(max_game_length_p+1),
+  localparam num_total_cells_lp = board_width_p * board_width_p,
+  parameter addr_width_lp = $clog2(num_total_cells_lp),
+  parameter row_width_lp = board_width_p
 )
-  (input clk_i
+(
+  input clk_i,
+  input [num_total_cells_lp-1:0] data_i,
+  input [game_length_width_lp-1:0] start_end_point,
+  input en_i,
+  input update_i,
+  output logic [num_total_cells_lp-1:0] data_o
+);
 
-  ,input [num_total_cells_lp-1:0] data_i
-  ,input en_i
-  ,input update_i
+logic [23:0] padded_start_end_point;
 
-  ,output logic [num_total_cells_lp-1:0] data_o
-  );
+// Zero extend the input to 24 bits
+assign padded_start_end_point = {{(24-game_length_width_lp){1'b0}}, start_end_point};
 
-  logic [0:board_width_p+1][0:board_width_p+1] cells_n; // One per cell, plus a boundary on all edges
+logic [num_total_cells_lp-1:0] data_r;
+logic [num_total_cells_lp-1:0] data_n;
+logic [board_width_p-1:0][row_width_lp-1:0] data_2d_r;
+logic [board_width_p-1:0][row_width_lp-1:0] data_2d_n;
 
-  // Top boundary
-  assign cells_n[0] = '0;
+// File handle
+integer file;
 
-  // Cell Array
-  for (genvar row_idx=0; row_idx<board_width_p; row_idx++) begin : gen_rows
-    // Left boundary
-    assign cells_n[row_idx+1][0] = 1'b0;
+// Initialize the file
+initial begin
+  file = $fopen("data_output.txt", "w");
+  if (!file) begin
+    $display("Error opening file.");
+    $finish;
+  end else begin
+    $display("File opened successfully.");
+  end
+end
 
-    for (genvar col_idx=0; col_idx<board_width_p; col_idx++) begin : gen_cols
-      logic [7:0] nghs;
-      assign nghs[0] = cells_n[row_idx+1-1][col_idx+1  ]; // Above
-      assign nghs[1] = cells_n[row_idx+1-1][col_idx+1-1]; // Above Left
-      assign nghs[2] = cells_n[row_idx+1-1][col_idx+1+1]; // Above Right
-      assign nghs[3] = cells_n[row_idx+1  ][col_idx+1-1]; // Left
-      assign nghs[4] = cells_n[row_idx+1  ][col_idx+1+1]; // Right
-      assign nghs[5] = cells_n[row_idx+1+1][col_idx+1-1]; // Below Left
-      assign nghs[6] = cells_n[row_idx+1+1][col_idx+1  ]; // Below
-      assign nghs[7] = cells_n[row_idx+1+1][col_idx+1+1]; // Below Right
-
-      bsg_cgol_cell life_cell(
-         .clk_i(clk_i)
-        ,.data_i(nghs)
-        ,.en_i(en_i)
-        ,.update_i(update_i)
-        ,.update_val_i(data_i[num_total_cells_lp-1-row_idx*board_width_p-col_idx])
-        ,.data_o(cells_n[row_idx+1][col_idx+1])
-      );
-
-      assign data_o[num_total_cells_lp-1-row_idx*board_width_p-col_idx] = cells_n[row_idx+1][col_idx+1];
-    end
-
-    // right boundary
-    assign cells_n[row_idx+1][board_width_p+1] = 1'b0;
+always_comb begin
+  // Convert 1D to 64-bit chunks
+  integer i;
+  for (i = 0; i < board_width_p; i = i + 1) begin
+    data_2d_r[i] = data_r[i * row_width_lp +: row_width_lp];
   end
 
-  // Bottom boundary
-  assign cells_n[board_width_p+1] = '0;
-  
+  data_2d_n = data_2d_r;
+  if (en_i) begin
+    // Arnold Cat Transform (Encryption)
+    // Add your specific transform logic here if needed
+  end else if (update_i) begin
+    // Update 2D data array
+    for (i = 0; i < board_width_p; i = i + 1) begin
+      data_2d_n[i] = data_i[i * row_width_lp +: row_width_lp];
+    end
+  end
+
+  // Convert 64-bit chunks back to 1D
+  for (i = 0; i < board_width_p; i = i + 1) begin
+    data_n[i * row_width_lp +: row_width_lp] = data_2d_n[i];
+  end
+end
+
+always_ff @ (posedge clk_i) begin
+  data_r <= data_n;
+end
+
+assign data_o = data_r;
+
+// Write the final state to the file at the end of the simulation
+final begin
+  integer i;
+  for (i = 0; i < num_total_cells_lp; i = i + 1) begin
+    $fwrite(file, "%b", data_r[i]);
+  end
+  $fclose(file);
+  $display("File closed.");
+end
+
 endmodule

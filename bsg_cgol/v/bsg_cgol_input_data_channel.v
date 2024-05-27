@@ -13,6 +13,7 @@ module bsg_cgol_input_data_channel #(
 
     ,output [num_total_cells_lp-1:0]   data_o
     ,output [game_length_width_lp-1:0] frames_o
+    ,output [23:0]                     start_end_point_o
     ,output                            v_o
     ,input                             ready_i
   );
@@ -41,7 +42,8 @@ module bsg_cgol_input_data_channel #(
     );
 
     assign frames_o = data_sipo[game_length_width_lp-1:0];
-    assign data_o   = data_sipo[game_length_width_lp+:num_total_cells_lp];
+    assign start_end_point_o = data_sipo[game_length_width_lp+23 : game_length_width_lp];
+    assign data_o   = data_sipo[game_length_width_lp+24 +:num_total_cells_lp];
 
     // Wait until we get all the data
     logic sipo_yumi;

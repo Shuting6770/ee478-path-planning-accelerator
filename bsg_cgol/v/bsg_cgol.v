@@ -19,6 +19,7 @@ module bsg_cgol #(
 
   logic [num_total_cells_lp-1:0] cells_init_val, cells_last_val;
   logic [game_length_width_lp-1:0] frames_lo;
+  logic [23:0] start_end_point;
 
   logic input_channel_v;
   logic ctrl_rd, ctrl_v;
@@ -51,15 +52,18 @@ module bsg_cgol #(
     ,.ready_o  (ready_o)
     ,.data_o   (cells_init_val)
     ,.frames_o (frames_lo)
+    ,.start_end_point_o(start_end_point)
     ,.v_o      (input_channel_v)
     ,.ready_i  (ctrl_rd)
   );
 
   bsg_cgol_cell_array #(
     .board_width_p(board_width_p)
+    ,.max_game_length_p(max_game_length_p)
   ) cell_array (
      .clk_i    (clk_i)
     ,.data_i   (cells_init_val)
+    ,.start_end_point_i (start_end_point)
     ,.en_i     (en_lo)
     ,.update_i (update_lo)
     ,.data_o   (cells_last_val)

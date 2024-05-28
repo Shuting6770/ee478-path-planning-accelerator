@@ -23,7 +23,7 @@ module bsg_cgol #(
   logic [game_length_width_lp-1:0] frames_lo;
   logic [23:0] start_end_point;
   logic [board_width_p-1:0][row_width_lp-1:0] map;
-  logic [board_width_p-1:0] finished_map [row_width_lp-1:0];
+  // logic [board_width_p-1:0] finished_map [row_width_lp-1:0];
 
   logic input_channel_v;
   logic ctrl_rd, ctrl_v;
@@ -83,7 +83,7 @@ module bsg_cgol #(
     ,.goalx_i({2'b00,start_end_point[11:6]})
     ,.goaly_i({2'b00,start_end_point[5:0]})
     ,.map(map)
-    ,.finished_map(finished_map));
+    );
   
   bsg_cgol_output_data_channel #(
      .board_width_p(board_width_p)

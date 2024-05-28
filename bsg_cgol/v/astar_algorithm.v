@@ -1,7 +1,7 @@
 module astar_algorithm #(
 	parameter board_width_p = 64
 )
-(sync,reset, startx_i, starty_i, goalx_i, goaly_i,map,finished_map);
+(sync,reset, startx_i, starty_i, goalx_i, goaly_i,map);
    
 	localparam row_width_lp = board_width_p;
 	localparam num_total_nodes = board_width_p*row_width_lp;
@@ -9,7 +9,8 @@ module astar_algorithm #(
 	input sync, reset;
 	input [7:0] startx_i, starty_i, goalx_i, goaly_i;
 	input [board_width_p-1:0][row_width_lp-1:0] map;
-	output [board_width_p-1:0] finished_map [row_width_lp-1:0];
+
+	reg [board_width_p-1:0] finished_map [row_width_lp-1:0];
 
 	reg [15:0] temp1, temp2, temp3, temp4, temp5, temp6, total1, total2;//temporary calculation registers
 	reg 	      did_swap;
@@ -145,6 +146,7 @@ module astar_algorithm #(
 	       INITIALIZE_ARRAY:
 		 begin
 		    $display("STATE: INITIALIZE ARRAY");
+			$display("temp1:%d",temp1);
 		    //STATE TRANSITION
 		    if(temp1 == num_total_nodes-1) // 如果==399，表示已经完成初始化，跳到下一个state->VERIFY
 		      state <= VERIFY;

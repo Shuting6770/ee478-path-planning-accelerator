@@ -17,9 +17,13 @@ module bsg_cgol #(
   ,input  logic yumi_i
 );
 
+  localparam row_width_lp = board_width_p;
+
   logic [num_total_cells_lp-1:0] cells_init_val, cells_last_val;
   logic [game_length_width_lp-1:0] frames_lo;
   logic [23:0] start_end_point;
+  logic [board_width_p-1:0][row_width_lp-1:0] map;
+  logic [board_width_p-1:0] finished_map [row_width_lp-1:0];
 
   logic input_channel_v;
   logic ctrl_rd, ctrl_v;
@@ -67,7 +71,19 @@ module bsg_cgol #(
     ,.en_i     (en_lo)
     ,.update_i (update_lo)
     ,.data_o   (cells_last_val)
+    ,.data_2d_o(map)
   );
+
+  astar_algorithm #(.board_width_p(board_width_p)
+  ) Astar  (
+    .sync(clk_i)
+    ,.reset(reset_i)
+    ,.startx_i({2'b00,start_end_point[23:18]})
+    ,.starty_i({2'b00,start_end_point[17:12]})
+    ,.goalx_i({2'b00,start_end_point[11:6]})
+    ,.goaly_i({2'b00,start_end_point[5:0]})
+    ,.map(map)
+    ,.finished_map(finished_map));
   
   bsg_cgol_output_data_channel #(
      .board_width_p(board_width_p)

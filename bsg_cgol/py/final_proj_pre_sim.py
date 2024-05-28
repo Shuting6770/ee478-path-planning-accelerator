@@ -16,8 +16,8 @@ output_dir = 'out' # GIFs are written here
 default_trace_fout = 'v/bsg_trace_master_0.tr' # Default output file
 
 # PARAMS to UPDATE
-set_user_path = '/homes/tim2642'  # + os.getlogin()
-work_dir_path = osp.join(set_user_path, 'EE477/478final')
+set_user_path = '/homes/stshao'  # + os.getlogin()
+work_dir_path = osp.join(set_user_path, 'ee478/ee478-path-planning-accelerator')
 py_dir_path = osp.join(work_dir_path, 'bsg_cgol/py')
 
 def get_bmp_zero_idxs(img_name):
@@ -134,7 +134,7 @@ def main():
   args = parser.parse_args()
   
   # MOD
-  img_name = 'image.jpg' #num2.png
+  img_name = 'map.jpg' #num2.png # png report ERROR?
   
   print(f'Clearing any previous output in "{output_dir}"...')
   # Create output directory for testbench .data files

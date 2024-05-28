@@ -12,7 +12,8 @@ module bsg_cgol_cell_array #(
   input [23:0] start_end_point_i,
   input en_i,
   input update_i,
-  output logic [num_total_cells_lp-1:0] data_o
+  output logic [num_total_cells_lp-1:0] data_o,
+  output logic [board_width_p-1:0][row_width_lp-1:0] data_2d_o
 );
 
 logic [23:0] start_end_point;
@@ -71,6 +72,7 @@ always_ff @ (posedge clk_i) begin
 end
 
 assign data_o = data_r;
+assign data_2d_o = data_2d_r;
 
 // Write the final state to the file at the end of the simulation
 final begin

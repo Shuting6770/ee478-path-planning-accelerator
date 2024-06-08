@@ -29,7 +29,7 @@ module  bsg_test_node_client #(parameter ring_width_p="inv"
 
     bsg_cgol #(
        .board_width_p(64)
-      ,.max_game_length_p(1000)
+      ,.max_game_length_p(2000)
       //  .board_width_p(3)
       // ,.max_game_length_p(1)
     ) cgol_inst(

@@ -13,10 +13,11 @@ module bsg_cgol_cell_array #(
   input en_i,
   input update_i,
   output logic [num_total_cells_lp-1:0] data_o,
-  output logic [board_width_p-1:0][row_width_lp-1:0] data_2d_o
+  output logic [board_width_p-1:0][row_width_lp-1:0] data_2d_o,
+  output logic [23:0] start_end_point_o
 );
 
-logic [23:0] start_end_point;
+// logic [23:0] start_end_point;
 
 // Zero extend the input to 24 bits
 // assign padded_start_end_point = {{(24-game_length_width_lp){1'b0}}, start_end_point_i};
@@ -67,7 +68,7 @@ end
 always_ff @ (posedge clk_i) begin
   data_r <= data_n;
   if (update_i) begin
-  start_end_point <= start_end_point_i;
+  start_end_point_o <= start_end_point_i;
   end
 end
 

@@ -1,5 +1,5 @@
 module astar_algorithm #(
-	parameter board_width_p = 20
+	parameter board_width_p = 16
 )
 (sync,reset, startx_i, starty_i, goalx_i, goaly_i,map_i, done_o);
    
@@ -123,8 +123,8 @@ module astar_algorithm #(
 	    case(state)
 	    	INITIALIZE:
 		 	begin
-		 		$display("STATE: INITIALIZE");
-				$display("start:(%d,%d), goal:(%d,%d)",startx_i, starty_i, goalx_i, goaly_i);
+		 		// $display("STATE: INITIALIZE");
+				// $display("start:(%d,%d), goal:(%d,%d)",startx_i, starty_i, goalx_i, goaly_i);
 				// $display("check map:%d", map_i);
 
 				//STATE TRANSITION
@@ -151,8 +151,8 @@ module astar_algorithm #(
 		    // STATE TRANSITION
 		    if(temp1 == num_total_nodes-1) begin // 如果==399，表示已经完成初始化，跳到下一个state->VERIFY
 		      state <= VERIFY;
-			  $display("STATE: INITIALIZE ARRAY");
-			  $display("temp1:%d",temp1);
+			//   $display("STATE: INITIALIZE ARRAY");
+			//   $display("temp1:%d",temp1);
 			end
 		    //RTL
 		    // if(temp1 <= row_width_lp) //如果<=39，继续更新每一个node到起点的距离（一行一行更新?）0~39
@@ -171,8 +171,8 @@ module astar_algorithm #(
 	       
 	       VERIFY:
 		 begin
-		    $display("STATE: VERIFY");
-			$display("start:(%d,%d), goal:(%d,%d)",startx_i, starty_i, goalx_i, goaly_i);
+		    // $display("STATE: VERIFY");
+			// $display("start:(%d,%d), goal:(%d,%d)",startx_i, starty_i, goalx_i, goaly_i);
 			distanceFromStart[startx*row_width_lp+starty] = 0; // 因为默认起点在（0，0）所以start0[0]=0
 		    //TRANSITION LOGIC
 		    //if(map[0] == 40'b0000000000000000000000000000000000000001)
@@ -190,8 +190,8 @@ module astar_algorithm #(
 
 			ERROR:
 			begin
-				$display("ERROR! start/goal node is in OBSTACLE!!!");
-				$display(map_i[startx*row_width_lp+starty],map_i[goalx*row_width_lp+goaly]);
+				// $display("ERROR! start/goal node is in OBSTACLE!!!");
+				// $display(map_i[startx*row_width_lp+starty],map_i[goalx*row_width_lp+goaly]);
 				state <= DONE;
 			end
 
@@ -199,8 +199,8 @@ module astar_algorithm #(
 	       CHECK_DONE:
 		 begin
 //`include "displaygrid.v"
-		    $display("STATE: CHECK DONE");
-		    $display("Open: %d,%d", openx[0],openy[0]);
+		    // $display("STATE: CHECK DONE");
+		    // $display("Open: %d,%d", openx[0],openy[0]);
 		    //TRANSITION LOGIC
 		    if(openx[0] == goalx && openy[0] == goaly) // 检查open list第一个node是不是等于goal,如果是，就直接结束。进入下一个state->重建
 		      state <= RECONSTRUCT;
@@ -212,8 +212,8 @@ module astar_algorithm #(
 		 end // case: CHECK_DONE
 	       QUEUE_MODS:
 		 begin
-		    $display("STATE: QUEUE MODS");
-			$display("Close size: %d" , closecounter);
+		    // $display("STATE: QUEUE MODS");
+			// $display("Close size: %d" , closecounter);
 		    //STATE TRANSITION
 		    state <= QUEUE_MODS_SHIFT;
 		    //RTL
@@ -238,7 +238,7 @@ module astar_algorithm #(
 		 end // case: QUEUE_MODS_SHIFT
 	       QUEUE_MODS_APPEND:
 		 begin
-		    $display("STATE: QUEUE MODS APPEND");
+		    // $display("STATE: QUEUE MODS APPEND");
 		    //STATE TRANSITION
 		    state <= SORT_QUEUE; // 这个state在sort_standalone里面
 		    //RTL
@@ -248,7 +248,7 @@ module astar_algorithm #(
 
 	       CREATE_NEIGHBORS:
 		 begin
-		    $display("STATE: CREATE NEIGHBORS");
+		    // $display("STATE: CREATE NEIGHBORS");
 		    //STATE TRANSITIONS
 		    state <= RESET_NEIGHBORS;
 		    //RTL
@@ -256,7 +256,7 @@ module astar_algorithm #(
 		 end
 	       RESET_NEIGHBORS:
 		 begin
-		    $display("STATE: RESET NEIGHBORS");
+		    // $display("STATE: RESET NEIGHBORS");
 		    //STATE TRANSITIONS
 		    if(neighborcounter == 3'b111) // ==9 overflow了，表示以及更新完tempneighbor list里的所有neighbor nodes坐标信息，move on to next state
 		      state <= GENERATE_NEIGHBORS;
@@ -267,7 +267,7 @@ module astar_algorithm #(
 		 end // case: RESET_NEIGHBORS
 	       GENERATE_NEIGHBORS:
 		 begin
-		 $display("STATE: GENERATE NEIGHBORS");
+		//  $display("STATE: GENERATE NEIGHBORS");
 		    //0 - NW
 		    //1 - N
 		    //2 - NE
@@ -364,11 +364,11 @@ module astar_algorithm #(
 		 end // case: GENERATE_NEIGHBORS
 	       NEIGHBOR_CHECK_LOOP:
 		 begin	   
-		    $display("STATE: NEIGHBOR CHECK LOOP");
+		    // $display("STATE: NEIGHBOR CHECK LOOP");
    		    if(tempneighborx[neighborcounter] != 8'b11111111 && tempneighbory[neighborcounter] != 8'b11111111 && map_i[tempneighbory[neighborcounter]*row_width_lp+tempneighborx[neighborcounter]] != 1'b1)//exists and is not obstacle
 		      begin // 当前counter指向的neighbor node存在，且不是ob
-		    	$display("Checking %d,%d", tempneighborx[neighborcounter],tempneighbory[neighborcounter]);
-		        $display("NeighborCounter: %d",neighborcounter);
+		    	// $display("Checking %d,%d", tempneighborx[neighborcounter],tempneighbory[neighborcounter]);
+		        // $display("NeighborCounter: %d",neighborcounter);
 		        state <= CHECK_IF_IN_CLOSED; // 在close list里搜索
 		        checkx = tempneighborx[neighborcounter];
 			 	checky = tempneighbory[neighborcounter];
@@ -380,9 +380,9 @@ module astar_algorithm #(
 					previousNodeY[goalx][goaly] = currenty;
 				end
 				// `include "generate_neighbor_distance_from_start.v" //计算当前neighbor count指向的neighbor node到起点的距离
-				$display("Current distance from start: %d",distanceFromStart[currentx*row_width_lp+currenty]);
-				$display("Current position: %d,%d", currentx, currenty);
-				$display("Neighbor position: %d,%d", tempneighborx[neighborcounter], tempneighbory[neighborcounter]);
+				// $display("Current distance from start: %d",distanceFromStart[currentx*row_width_lp+currenty]);
+				// $display("Current position: %d,%d", currentx, currenty);
+				// $display("Neighbor position: %d,%d", tempneighborx[neighborcounter], tempneighbory[neighborcounter]);
 				neighbor_distance_from_start <= distanceFromStart[currentx*row_width_lp+currenty] + (currentx == tempneighborx[neighborcounter] || currenty == tempneighbory[neighborcounter]) ? 1000 : 1414;
 		      end
 		    else

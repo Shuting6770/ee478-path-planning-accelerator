@@ -170,8 +170,9 @@ module bsg_gateway_chip
         assign done_n[i] = guts.n[i].mstr.mstr.done_lo;
     end
     wire all_done = &done_n;
-    always @(posedge all_done)
+    always @(posedge all_done) begin
+        #5000;
         $finish();
-
+    end
 
 endmodule

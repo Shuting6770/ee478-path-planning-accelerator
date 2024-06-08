@@ -4,7 +4,7 @@
 # This needs to match the parameters of the DUT instantiated in the testbench
 board: 
   width: 64
-  max_length: 1000
+  max_length: 2000
   start_end_point: "000000000000111001111001"
 
 display:
@@ -20,7 +20,7 @@ display:
 games: [
   # Small and simple oscillator
   {
-    length: 1,
+    length: 2000,
     checks: "last", # Only check last frame
     init_alive: [
       [-1,0], [0,0], [1,0]

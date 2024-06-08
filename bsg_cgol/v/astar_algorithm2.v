@@ -1,19 +1,17 @@
 module astar_algorithm #(
-	parameter board_width_p = 20
+	parameter board_width_p = 64
 )
-(sync,reset, startx_i, starty_i, goalx_i, goaly_i,map_i, done_o);
+(sync,reset, startx_i, starty_i, goalx_i, goaly_i,map, done_o);
    
 	localparam row_width_lp = board_width_p;
 	localparam num_total_nodes = board_width_p*row_width_lp;
 
 	input sync, reset;
 	input [7:0] startx_i, starty_i, goalx_i, goaly_i;
-	// input [board_width_p-1:0][row_width_lp-1:0] map;
-	input [num_total_nodes-1:0] map_i;
+	input [board_width_p-1:0][row_width_lp-1:0] map;
 	output logic done_o;
 
 	reg [board_width_p-1:0] finished_map [row_width_lp-1:0];
-	// reg [board_width_p-1:0][row_width_lp-1:0] map;
 
 	reg [15:0] temp1, temp2, temp3, temp4, temp5, temp6, total1, total2;//temporary calculation registers
 	reg 	      did_swap;
@@ -34,16 +32,19 @@ module astar_algorithm #(
 	reg [7:0]  tempneighborx [7:0]; // 当前node的8个neighbor nodes, x-axis
 	reg [7:0]  tempneighbory [7:0]; // 当前node的8个neighbor nodes, y-axis
 	reg [3:0]  neighborcounter; // count neighbor node, 用于更新neighbor信息
+	reg 	      neighbor_is_better;
 	reg [19:0]  neighbor_distance_from_start;
 
 	reg [7:0]   checkx;//searches for this in queue
-	reg [7:0] 	checky;
-	reg [9:0] 	sort_count;//used for sorting
+	reg [7:0] checky;
+	reg [9:0] sort_count;//used for sorting
 
-	reg 	    done;
+	reg 	     done;
 
-	reg [7:0]  	state;//current state
+	reg [7:0]  state;//current state
+	reg [7:0]  nextstate;//for utility sms this lets it know where to go next
 
+	reg 	      bad;
    
 //    这些localparam全是state的名字
    localparam
@@ -125,12 +126,11 @@ module astar_algorithm #(
 		 	begin
 		 		$display("STATE: INITIALIZE");
 				$display("start:(%d,%d), goal:(%d,%d)",startx_i, starty_i, goalx_i, goaly_i);
-				// $display("check map:%d", map_i);
-
 				//STATE TRANSITION
 				state <= INITIALIZE_ARRAY;
 		    	//RTL  
 				// `include "map2.v" // 这里改成给mem一个Write信号  
+				bad = 0;
 				done_o <= 0;
 				opencounter <= 9'b000000000;
 				closecounter <= 9'b000000000;
@@ -146,9 +146,9 @@ module astar_algorithm #(
 			end // case: INITIALIZE
 	       INITIALIZE_ARRAY:
 		 begin
-		    // $display("STATE: INITIALIZE ARRAY");
-			// $display("temp1:%d",temp1);
-		    // STATE TRANSITION
+		    $display("STATE: INITIALIZE ARRAY");
+			$display("temp1:%d",temp1);
+		    //STATE TRANSITION
 		    if(temp1 == num_total_nodes-1) begin // 如果==399，表示已经完成初始化，跳到下一个state->VERIFY
 		      state <= VERIFY;
 			  $display("STATE: INITIALIZE ARRAY");
@@ -176,9 +176,9 @@ module astar_algorithm #(
 			distanceFromStart[startx*row_width_lp+starty] = 0; // 因为默认起点在（0，0）所以start0[0]=0
 		    //TRANSITION LOGIC
 		    //if(map[0] == 40'b0000000000000000000000000000000000000001)
-		    if(map_i[startx*row_width_lp+starty]) // 检查起点是不是ob,如果是就直接报错，结束
+		    if(map[startx][starty]) // 检查起点是不是ob,如果是就直接报错，结束
 		      state <= ERROR;
-		    else if(map_i[goalx*row_width_lp+goaly]) // 检查终点是不是ob，如果是就直接报错，结束
+		    else if(map[goalx][goaly]) // 检查终点是不是ob，如果是就直接报错，结束
 		      state <= ERROR;
 		    else
 		      state <= CHECK_DONE;
@@ -187,15 +187,6 @@ module astar_algorithm #(
 		    openy[0] <= starty;
 		    opencounter <= opencounter + 1; // opencounter是一个pointer指向刚放进去的node，表示这个list里有多少个node
 		 end // case: VERIFY
-
-			ERROR:
-			begin
-				$display("ERROR! start/goal node is in OBSTACLE!!!");
-				$display(map_i[startx*row_width_lp+starty],map_i[goalx*row_width_lp+goaly]);
-				state <= DONE;
-			end
-
-
 	       CHECK_DONE:
 		 begin
 //`include "displaygrid.v"
@@ -204,10 +195,8 @@ module astar_algorithm #(
 		    //TRANSITION LOGIC
 		    if(openx[0] == goalx && openy[0] == goaly) // 检查open list第一个node是不是等于goal,如果是，就直接结束。进入下一个state->重建
 		      state <= RECONSTRUCT;
-		    else if(openx[0] == 8'b11111111 && openy[0] == 8'b11111111) begin // 如果open list第一个node是FF表示list里的所有node都已经pop out了，找不到goal。直接fail
-		      state <= DONE;
-			  $display("FAIL TO FIND THE PATH!!!");
-			end
+		    else if(openx[0] == 8'b11111111 && openy[0] == 8'b11111111) // 如果open list第一个node是FF表示list里的所有node都已经pop out了，找不到goal。直接fail
+		      state <= RECONSTRUCT;
 		    else state <= QUEUE_MODS;
 		 end // case: CHECK_DONE
 	       QUEUE_MODS:
@@ -219,7 +208,7 @@ module astar_algorithm #(
 		    //RTL
 		    currentx <= openx[0]; // 现在把open list中新加进来的node作为当前节点
 		    currenty <= openy[0];
-		    closex[closecounter] <= openx[0]; // 把open list中的best node放进close list中
+		    closex[closecounter] <= openx[0]; // 把open list中的第一个node放进close list中
 		    closey[closecounter] <= openy[0];
 		    closecounter <= closecounter + 1; // close list中增加了一个node, counter+1
 		    opencounter <= opencounter - 1; // 准备把open list中最前面的一个node pop out,所以counter先-1
@@ -261,6 +250,8 @@ module astar_algorithm #(
 		    if(neighborcounter == 3'b111) // ==9 overflow了，表示以及更新完tempneighbor list里的所有neighbor nodes坐标信息，move on to next state
 		      state <= GENERATE_NEIGHBORS;
 		    //RTL
+		    // neighborx[neighborcounter] <= 8'b11111111; //?
+		    // neighbory[neighborcounter] <= 8'b11111111; //?
 		    tempneighborx[neighborcounter] <= 8'b11111111; // 将所有neighbor node坐标初始化
 		    tempneighbory[neighborcounter] <= 8'b11111111;
 		    neighborcounter <= neighborcounter + 1; // 下一个neighbor
@@ -365,7 +356,7 @@ module astar_algorithm #(
 	       NEIGHBOR_CHECK_LOOP:
 		 begin	   
 		    $display("STATE: NEIGHBOR CHECK LOOP");
-   		    if(tempneighborx[neighborcounter] != 8'b11111111 && tempneighbory[neighborcounter] != 8'b11111111 && map_i[tempneighbory[neighborcounter]*row_width_lp+tempneighborx[neighborcounter]] != 1'b1)//exists and is not obstacle
+   		    if(tempneighborx[neighborcounter] != 8'b11111111 && tempneighbory[neighborcounter] != 8'b11111111 && map[tempneighbory[neighborcounter]][tempneighborx[neighborcounter]] != 1'b1)//exists and is not obstacle
 		      begin // 当前counter指向的neighbor node存在，且不是ob
 		    	$display("Checking %d,%d", tempneighborx[neighborcounter],tempneighbory[neighborcounter]);
 		        $display("NeighborCounter: %d",neighborcounter);
@@ -508,7 +499,7 @@ module astar_algorithm #(
 	       CHECK_IF_NEIGHBOR_IS_BETTER:
 		 begin
 		    $display("STATE: CHECK IF NEIGHBOR IS BETTER"); // neighbor has shorter distance than current node
-			if((distanceFromStart[currentx*row_width_lp+currenty]+ ((currentx == tempneighborx[neighborcounter] || currenty == tempneighbory[neighborcounter]) ? 1000 : 1414)) < distanceFromStart[tempneighborx[neighborcounter]*row_width_lp+tempneighbory[neighborcounter]])
+			if((distanceFromStart[tempneighborx[neighborcounter]*row_width_lp+tempneighbory[neighborcounter]]+ ((currentx == tempneighborx[neighborcounter] || currenty == tempneighbory[neighborcounter]) ? 1000 : 1414)) < distanceFromStart[currentx*row_width_lp+currenty])
 		    	state <= NEIGHBOR_IS_BETTER;
 		    else begin 
 				if(neighborcounter == 4'b0111) state <= CHECK_DONE;
@@ -554,15 +545,11 @@ module astar_algorithm #(
 				temp1 <= 32'b0;
 				if(temp1 != 32'b0)
 				//DRAW_MAP:
-				for(i = 0; i < row_width_lp; i = i +1 )
+				for(i = 0; i < board_width_p; i = i +1 )
 				begin
-					for( j = 0; j < board_width_p; j = j + 1)
+					for( j = 0; j < row_width_lp; j = j + 1)
 					begin
-						if ((i==starty && j==startx) || (i==goaly && j==goalx))
-							begin
-								$write("N");
-							end
-						else if(map_i[i*row_width_lp+j] == 1)
+						if(map[i][j] == 1)
 							begin
 							$write("X");
 							end
@@ -570,10 +557,10 @@ module astar_algorithm #(
 							begin
 							$write("P");
 							end
-						// else if (currentx == j && currenty == i)
-						// 	begin
-						// 		$write("A");
-						// 	end
+						else if (currentx == j && currenty == i)
+							begin
+								$write("A");
+							end
 						else
 							$write("O");
 					end
@@ -583,10 +570,21 @@ module astar_algorithm #(
 				done_o <= 1'b1;
 			end
 
+// `include "v/roy_reconstruct.v"
+// `include "debug.v"
 
+//ROSS' CODE GOES HERE!!
+// `include "search_open_standalone.v"
+// `include "search_close_standalone.v"
+// `include "v/sort_standalone.v"
 			RECONSTRUCT:
 			begin
 				$display("STATE: RECONSTRUCT");
+				$display("39 39: %d,%d",previousNodeX[39][39],previousNodeY[39][39]);
+				$display("39 38: %d,%d",previousNodeX[39][38],previousNodeY[39][38]);
+				$display("38 39: %d,%d",previousNodeX[38][39],previousNodeY[38][39]);
+				$display("38 38: %d,%d",previousNodeX[38][38],previousNodeY[38][38]);
+				$display("38 37: %d,%d",previousNodeX[38][37],previousNodeY[38][37]);
 				//STATE TRANSITION
 				state <= RECONSTRUCT_PLACE;
 				//RTL
@@ -754,11 +752,5 @@ module astar_algorithm #(
 	     endcase // case (state)
 	  end // else: !if(reset)
      end // always @ (posedge sync,posedge reset)
-
-
-
-	initial begin
-		$fsdbDumpvars;
-	end
 
    endmodule;

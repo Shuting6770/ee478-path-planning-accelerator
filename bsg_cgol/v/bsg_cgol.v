@@ -21,7 +21,7 @@ module bsg_cgol #(
 
   logic [num_total_cells_lp-1:0] cells_init_val, cells_last_val;
   logic [game_length_width_lp-1:0] frames_lo;
-  logic [23:0] start_end_point;
+  logic [23:0] start_end_point, start_end_point_lo;
   logic [board_width_p-1:0][row_width_lp-1:0] map;
   // logic [board_width_p-1:0] finished_map [row_width_lp-1:0];
 
@@ -29,6 +29,7 @@ module bsg_cgol #(
   logic ctrl_rd, ctrl_v;
   logic update_lo, en_lo;
   logic output_channel_yumi;
+  logic done_lo;
 
   bsg_cgol_ctrl #(
     .max_game_length_p(max_game_length_p)
@@ -72,17 +73,19 @@ module bsg_cgol #(
     ,.update_i (update_lo)
     ,.data_o   (cells_last_val)
     ,.data_2d_o(map)
+    ,.start_end_point_o(start_end_point_lo)
   );
 
   astar_algorithm #(.board_width_p(board_width_p)
   ) Astar  (
     .sync(clk_i)
     ,.reset(reset_i)
-    ,.startx_i({2'b00,start_end_point[23:18]})
-    ,.starty_i({2'b00,start_end_point[17:12]})
-    ,.goalx_i({2'b00,start_end_point[11:6]})
-    ,.goaly_i({2'b00,start_end_point[5:0]})
+    ,.startx_i({2'b00,start_end_point_lo[23:18]})
+    ,.starty_i({2'b00,start_end_point_lo[17:12]})
+    ,.goalx_i({2'b00,start_end_point_lo[11:6]})
+    ,.goaly_i({2'b00,start_end_point_lo[5:0]})
     ,.map(map)
+    ,.done_o(done_lo)
     );
   
   bsg_cgol_output_data_channel #(
@@ -92,6 +95,7 @@ module bsg_cgol #(
     ,.reset_i (reset_i)
     ,.data_i  (cells_last_val)
     ,.v_i     (ctrl_v)
+    // ,.v_i     (done_lo)
     ,.yumi_o  (output_channel_yumi)
     ,.data_o  (data_o)
     ,.v_o     (v_o)

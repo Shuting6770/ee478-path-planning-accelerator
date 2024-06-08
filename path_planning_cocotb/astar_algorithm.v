@@ -756,9 +756,4 @@ module astar_algorithm #(
      end // always @ (posedge sync,posedge reset)
 
 
-
-	initial begin
-		$fsdbDumpvars;
-	end
-
    endmodule;

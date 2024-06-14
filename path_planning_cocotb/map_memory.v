@@ -35,7 +35,7 @@ module map_memory #(
             cnt <= 0;
         end else if state_r==LOAD begin
             cnt <= cnt + data_width_p;
-            mem[cnt+data_width_p-1:cnt] <= data_in;
+            mem[cnt+data_width_p-1:cnt] <= data_i;
             state_r <= state_n;
         end else
             cnt <= cnt;

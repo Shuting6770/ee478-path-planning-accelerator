@@ -13,6 +13,7 @@ from cocotb.triggers import RisingEdge, FallingEdge, Timer
 
 
 CLK_PERIOD = 10
+DATA_WIDTH_P = 8
 
 
 async def input_side_testbench(dut,map):
@@ -28,8 +29,28 @@ async def input_side_testbench(dut,map):
     # Wait for reset deassertion
     while 1:
         await RisingEdge(dut.sync); await Timer(1, units="ps")
-        if dut.reset == 0: break
+        if dut.reset_i == 0: break
 
+    await RisingEdge(dut.clk_i); await Timer(1, units="ps")
+    num = int(len(map)/DATA_WIDTH_P)
+    if num*DATA_WIDTH_P < map:
+        for n in range(num+1):
+            if n*DATA_WIDTH_P+7 > len(map):
+                input_data = map[len(map)-1:n*DATA_WIDTH_P]
+            else:
+                input_data = map[n*DATA_WIDTH_P+7:n*DATA_WIDTH_P]
+            dut.data_i.setimmediatevalue(input_data)
+            await RisingEdge(dut.sync); await Timer(1, units="ps")
+    else:
+        for n in range(num):
+            if n*DATA_WIDTH_P+7 > len(map):
+                input_data = map[len(map)-1:n*DATA_WIDTH_P]
+            else:
+                input_data = map[n*DATA_WIDTH_P+7:n*DATA_WIDTH_P]
+            dut.data_i.setimmediatevalue(input_data)
+            await RisingEdge(dut.sync); await Timer(1, units="ps")
+
+    dut.data_i.value = 0
 
 
 
